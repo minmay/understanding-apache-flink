@@ -47,9 +47,10 @@ public class UnderstandingApacheFlinkApp {
 			"    step_date\n" +
 			") WITH (\n" +
 			"    'connector' = 'filesystem',\n" +
-			"    'path' = '%s',\n" + 				// path to a directory
+			"    'path' = '%s',\n" +                // path to a directory
 			"    'format' = 'parquet'\n" +
 			");";
+
 	public static void main(String args[]) throws Exception {
 		final StreamExecutionEnvironment streamEnv = StreamExecutionEnvironment.getExecutionEnvironment();
 
@@ -69,8 +70,8 @@ public class UnderstandingApacheFlinkApp {
 				.uid("time-series kafka-source");
 
 		final DataStream<RawTimeSeries> timeSeriesStream = timeSeriesSource.keyBy(
-				new NameKeySelector()
-		).process(new EnrichRawTimeSeriesWithEventtime())
+						new NameKeySelector()
+				).process(new EnrichRawTimeSeriesWithEventtime())
 				.name("enrich time-series with event time")
 				.uid("enrich-time-series-with-event-time");
 
