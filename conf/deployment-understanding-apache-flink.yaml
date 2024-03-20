@@ -1,0 +1,181 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: understanding-apache-flink
+spec:
+  kafka:
+    version: 3.6.1
+    replicas: 3
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+      - name: extlb
+        # documentation at https://strimzi.io/docs/operators/latest/configuring.html#type-GenericKafkaListener-reference
+        # A new loadbalancer service is created for every Kafka broker pod. An additional loadbalancer is created to
+        # serve as a Kafka bootstrap address. Loadbalancers listen to the specified port number
+        port: 9094
+        type: loadbalancer
+        tls: false
+        configuration:
+          loadBalancerSourceRanges:
+            - 255.255.255.252/30
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      default.replication.factor: 3
+      min.insync.replicas: 2
+      inter.broker.protocol.version: "3.6"
+    storage:
+      type: ephemeral
+  zookeeper:
+    replicas: 1
+    resources:
+      requests:
+        memory: 128M
+      limits:
+        memory: 256M
+    storage:
+      type: ephemeral
+  #      size: 100M
+  #      deleteClaim: false
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-ui
+spec:
+  selector:
+    matchLabels:
+      app: kafka-ui
+  template:
+    metadata:
+      labels:
+        app: kafka-ui
+    spec:
+      containers:
+        - image: provectuslabs/kafka-ui:v0.4.0
+          name: kafka-ui
+          ports:
+            - containerPort: 8080
+          env:
+            - name: KAFKA_CLUSTERS_0_NAME
+              value: "data-gen-agent"
+            - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+              value: "understanding-apache-flink-kafka-bootstrap:9092"
+            - name: SERVER_FORWARDHEADERSSTRATEGY
+              value: FRAMEWORK
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-gen-agent-app
+  labels:
+    app: data-gen-agent-app
+spec:
+  selector:
+    matchLabels:
+      app: data-gen-agent-app
+  template:
+    metadata:
+      labels:
+        app: data-gen-agent-app
+    spec:
+      containers:
+        - image: minmay/data-gen-agent-js:1.0.0
+          imagePullPolicy: Never
+          name: data-gen-gent
+          env:
+            - name: KAFKA_BROKERS
+              value: "understanding-apache-flink-kafka-bootstrap:9092"
+            - name: LOOP_MS
+              value: "10000"
+            - name: TAGS
+              value: "/opt/data-gen-agent/conf/tags.yaml"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: localstack-configmap
+data:
+  init.sh: |
+    #!/usr/bin/env bash
+    awslocal s3 mb s3://understanding-apache-flink
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: localstack
+  labels:
+    app: localstack
+spec:
+  selector:
+    matchLabels:
+      app: localstack
+  template:
+    metadata:
+      labels:
+        app: localstack
+    spec:
+      containers:
+        - image: localstack/localstack:stable
+          name: localstack
+          env:
+            - name: SERVICES
+              value: s3
+          ports:
+            - containerPort: 4566
+          volumeMounts:
+            - name: localstack-init
+              mountPath: /etc/localstack/init/ready.d
+      volumes:
+        - name: localstack-init
+          configMap:
+            name: localstack-configmap
+            defaultMode: 0755
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: builds
+  labels:
+    app: understanding-apache-flink
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50M
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: understanding-apache-flink-build
+spec:
+  template:
+    spec:
+      containers:
+        - name: understanding-apache-flink-build
+          image: minmay/understanding-apache-flink:latest
+          imagePullPolicy: Never
+          volumeMounts:
+            - mountPath: /deployments
+              name: build-storage
+          command: [
+            "cp", "/opt/understanding-apache-flink/build/libs/understanding-apache-flink-all.jar",
+            "/deployments"
+          ]
+      restartPolicy: Never
+      volumes:
+        - name: build-storage
+          persistentVolumeClaim:
+            claimName: builds

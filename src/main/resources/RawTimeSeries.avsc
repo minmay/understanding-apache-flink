@@ -1,0 +1,11 @@
+{ "namespace": "me.mvillalobos.presentations.flink.understanding.io",
+  "type": "record",
+  "name": "RawTimeSeries",
+  "fields": [
+    { "name": "contentType", "type": "string" },
+    { "name": "controlStreamType", "type": "string" },
+    { "name": "step",  "type": { "logicalType": "timestamp-milli", "type": "long" } },
+    { "name": "name", "type": "string" },
+    { "name": "value", "type": "string" }
+  ]
+}

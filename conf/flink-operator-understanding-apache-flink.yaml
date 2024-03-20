@@ -1,0 +1,137 @@
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkDeployment
+metadata:
+  namespace: understanding-apache-flink
+  name: understanding-apache-flink-deployment
+spec:
+  image: minmay/flink:1.18.1-scala_2.12-hadoop-3.3.6-java11
+  imagePullPolicy: Never
+  flinkVersion: v1_18
+  flinkConfiguration:
+    # The number of parallel operator or user function instances that a single TaskManager can run.
+    # If this value is larger than 1, a single TaskManager takes multiple instances of a function or operator.
+    # That way, the TaskManager can utilize multiple CPU cores, but at the same time, the available memory is
+    # divided between the different operator or function instances. This value is typically proportional to the
+    # number of physical CPU cores that the TaskManager's machine has (e.g., equal to the number of cores,
+    # or half the number of cores).
+    taskmanager.numberOfTaskSlots: "1"
+    # The state backend to be used to store state.
+    state.backend.type: rocksdb
+    # The default directory used for storing the data files and meta data of checkpoints in a Flink supported filesystem.
+    state.checkpoints.dir: s3://understanding-apache-flink/checkpoints
+    # The default directory for savepoints.
+    state.savepoints.dir: s3://understanding-apache-flink/savepoints
+    # This setting defines the base interval. Checkpoint triggering may be delayed by the settings
+    # execution.checkpointing.max-concurrent-checkpoints and execution.checkpointing.min-pause
+    execution.checkpointing.interval: 60000 ms
+    # Enables the experimental flame graph feature.
+    rest.flamegraph.enabled: "true"
+    s3.endpoint: http://localstack-service:4566
+    s3.path.style.access: "true"
+    s3.access-key: understanding-apache-flink
+    s3.secret-key: understanding-apache-flink
+    # We added this parameter because of this error:
+    # MountVolume.SetUp failed for volume "hadoop-config-volume" :  "hadoop-config-name" not found
+    # solution found at: https://stackoverflow.com/questions/73623172/flink-task-manager-failed-for-volume-hadoop-config-volume-with-flink-kubernete
+    # Whether to enable Hadoop configuration mount decorator. This must be set to false when Hadoop config is
+    # mounted outside of Flink. A typical use-case is when one uses Flink Kubernetes Operator.
+    kubernetes.decorator.hadoop-conf-mount.enabled: "false"
+  logConfiguration:
+    "log4j-console.properties": |
+      rootLogger.level = INFO
+      rootLogger.appenderRef.file.ref = LogFile
+      rootLogger.appenderRef.console.ref = LogConsole
+      appender.file.name = LogFile
+      appender.file.type = File
+      appender.file.append = false
+      appender.file.fileName = ${sys:log.file}
+      appender.file.layout.type = PatternLayout
+      appender.file.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p %-60c %x - %m%n
+      appender.console.name = LogConsole
+      appender.console.type = CONSOLE
+      appender.console.layout.type = PatternLayout
+      appender.console.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p %-60c %x - %m%n
+      logger.akka.name = akka
+      logger.akka.level = INFO
+      logger.kafka.name= org.apache.kafka
+      logger.kafka.level = INFO
+      logger.hadoop.name = org.apache.hadoop
+      logger.hadoop.level = INFO
+      logger.zookeeper.name = org.apache.zookeeper
+      logger.zookeeper.level = INFO
+      logger.netty.name = org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline
+      logger.netty.level = OFF
+    "logback-console.xml": |
+      <configuration>
+        <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+          <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
+          </encoder>
+        </appender>
+        <appender name="file" class="ch.qos.logback.core.FileAppender">
+          <file>${log.file}</file>
+          <append>false</append>
+          <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
+          </encoder>
+        </appender>
+        <root level="INFO">
+          <appender-ref ref="console"/>
+          <appender-ref ref="file"/>
+        </root>
+        <logger name="akka" level="INFO" />
+        <logger name="org.apache.kafka" level="INFO" />
+        <logger name="org.apache.hadoop" level="INFO" />
+        <logger name="org.apache.zookeeper" level="INFO" />
+      <logger name="org.apache.flink" level="INFO" />
+        <logger name="org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline" level="ERROR" />
+      </configuration>
+  serviceAccount: flink
+  podTemplate:
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: pod-template
+    spec:
+      containers:
+        # Do not change the main container name
+        - name: flink-main-container
+          volumeMounts:
+            - mountPath: /deployments
+              name: build-storage
+          env:
+            - name: ENABLE_BUILT_IN_PLUGINS
+              value: flink-s3-fs-hadoop-1.18.1.jar flink-state-processor-api-1.18.1.jar
+            - name: HADOOP_CLASSPATH
+              value: /opt/hadoop/etc/hadoop:/opt/hadoop/share/hadoop/common/lib/*:/opt/hadoop/share/hadoop/common/*:/opt/hadoop/share/hadoop/hdfs:/opt/hadoop/share/hadoop/hdfs/lib/*:/opt/hadoop/share/hadoop/hdfs/*:/opt/hadoop/share/hadoop/mapreduce/*:/opt/hadoop/share/hadoop/yarn:/opt/hadoop/share/hadoop/yarn/lib/*:/opt/hadoop/share/hadoop/yarn/*
+            - name: AWS_ACCESS_KEY_ID
+              value: understanding-apache-flink
+            - name: AWS_SECRET_ACCESS_KEY
+              value: understanding-apache-flink
+            - name: AWS_DEFAULT_REGION
+              value: us-west-1
+      volumes:
+        - name: build-storage
+          persistentVolumeClaim:
+            claimName: builds
+  jobManager:
+    resource:
+      memory: "2048m"
+      cpu: 1
+  taskManager:
+    resource:
+      memory: "2048m"
+      cpu: 1
+  job:
+    jarURI: local:///deployments/understanding-apache-flink-all.jar
+    parallelism: 1
+    upgradeMode: stateless
+    state: running
+    entryClass: me.mvillalobos.presentations.flink.understanding.UnderstandingApacheFlinkApp
+    args:
+      - --kafka.bootstrap-servers
+      - understanding-apache-flink-kafka-bootstrap:9092
+      - --kafka.topic
+      - time-series
+      - --long-term-store.sink-path
+      - s3://understanding-apache-flink/long-term-store
