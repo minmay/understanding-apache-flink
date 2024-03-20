@@ -51,12 +51,13 @@ public class UnderstandingApacheFlinkApp {
 			"    'format' = 'parquet'\n" +
 			");";
 	public static void main(String args[]) throws Exception {
-		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+		final StreamExecutionEnvironment streamEnv = StreamExecutionEnvironment.getExecutionEnvironment();
 
 		final Class<?> unmodifiableCollectionSerializer = Class.forName("java.util.Collections$UnmodifiableCollection");
-		env.getConfig().addDefaultKryoSerializer(unmodifiableCollectionSerializer, UnmodifiableCollectionSerializer.class);
+		streamEnv.getConfig().addDefaultKryoSerializer(unmodifiableCollectionSerializer, UnmodifiableCollectionSerializer.class);
 
 		final ParameterTool parameters = ParameterTool.fromArgs(args);
+		streamEnv.getConfig().setGlobalJobParameters(parameters);
 
 		final String kafkaBootstrapServers = parameters.get("kafka.bootstrap-servers", "data-gen-agent-kafka-bootstrap:9092");
 		final String kafkaGroupId = parameters.get("kafka.group-id", "understanding-flink");
@@ -64,7 +65,7 @@ public class UnderstandingApacheFlinkApp {
 		final String longTermStoreSinkPath = parameters.get("long-term-store.sink-path", "s3://long-term-store");
 		final boolean longTermStoreSinkPathSqlApiEnabled = parameters.getBoolean("long-term-store.sink-path.sql-api.enabled", true);
 
-		final DataStream<RawTimeSeries> timeSeriesSource = buildTimeSeriesSource(kafkaBootstrapServers, kafkaTopic, kafkaGroupId, env)
+		final DataStream<RawTimeSeries> timeSeriesSource = buildTimeSeriesSource(kafkaBootstrapServers, kafkaTopic, kafkaGroupId, streamEnv)
 				.uid("time-series kafka-source");
 
 		final DataStream<RawTimeSeries> timeSeriesStream = timeSeriesSource.keyBy(
@@ -74,7 +75,7 @@ public class UnderstandingApacheFlinkApp {
 				.uid("enrich-time-series-with-event-time");
 
 		if (longTermStoreSinkPathSqlApiEnabled) {
-			sinkToTimeSeriesSink(env, timeSeriesStream, longTermStoreSinkPath);
+			sinkToTimeSeriesSink(streamEnv, timeSeriesStream, longTermStoreSinkPath);
 		} else {
 			final Schema schema = buildSchema();
 			final DataStream<GenericRecord> avroRawTimeSeriesStream = timeSeriesStream.map(MapRawTimeSeriesToGenericRecord.create(schema))
@@ -88,7 +89,7 @@ public class UnderstandingApacheFlinkApp {
 					.uid("save to long-term sink");
 		}
 
-		env.execute("Understanding Apache Flink");
+		streamEnv.execute("Understanding Apache Flink");
 	}
 
 	private static FileSink<GenericRecord> buildLongTermStore(Schema schema, String longTermStoreSinkPath) {
