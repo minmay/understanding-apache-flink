@@ -2,6 +2,7 @@ package me.mvillalobos.presentations.flink.understanding;
 
 import com.twitter.chill.java.UnmodifiableCollectionSerializer;
 import me.mvillalobos.presentations.flink.understanding.domain.RawTimeSeries;
+import me.mvillalobos.presentations.flink.understanding.functions.EnrichRawTimeSeriesWithEventtime;
 import me.mvillalobos.presentations.flink.understanding.functions.MapRawTimeSeriesToGenericRecord;
 import me.mvillalobos.presentations.flink.understanding.io.CSVDeserializer;
 import org.apache.avro.Schema;
@@ -52,7 +53,7 @@ public class UnderstandingApacheFlinkApp {
 	public static void main(String args[]) throws Exception {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-		Class<?> unmodifiableCollectionSerializer = Class.forName("java.util.Collections$UnmodifiableCollection");
+		final Class<?> unmodifiableCollectionSerializer = Class.forName("java.util.Collections$UnmodifiableCollection");
 		env.getConfig().addDefaultKryoSerializer(unmodifiableCollectionSerializer, UnmodifiableCollectionSerializer.class);
 
 		final ParameterTool parameters = ParameterTool.fromArgs(args);
@@ -63,18 +64,28 @@ public class UnderstandingApacheFlinkApp {
 		final String longTermStoreSinkPath = parameters.get("long-term-store.sink-path", "s3://long-term-store");
 		final boolean longTermStoreSinkPathSqlApiEnabled = parameters.getBoolean("long-term-store.sink-path.sql-api.enabled", true);
 
-		final DataStream<RawTimeSeries> timeSeriesSource = buildTimeSeriesSource(kafkaBootstrapServers, kafkaTopic, kafkaGroupId, env);
+		final DataStream<RawTimeSeries> timeSeriesSource = buildTimeSeriesSource(kafkaBootstrapServers, kafkaTopic, kafkaGroupId, env)
+				.uid("time-series kafka-source");
 
-		boolean avroBug = true;
+		final DataStream<RawTimeSeries> timeSeriesStream = timeSeriesSource.keyBy(
+				new NameKeySelector()
+		).process(new EnrichRawTimeSeriesWithEventtime())
+				.name("enrich time-series with event time")
+				.uid("enrich-time-series-with-event-time");
+
 		if (longTermStoreSinkPathSqlApiEnabled) {
-			final Schema schema = buildSchema();
-			final DataStream<GenericRecord> avroRawTimeSeriesStream = timeSeriesSource.map(MapRawTimeSeriesToGenericRecord.create(schema))
-					.returns(new GenericRecordAvroTypeInfo(schema));
-			GenericData.get().addLogicalTypeConversion(new TimeConversions.TimestampMillisConversion());
-			final FileSink<GenericRecord> longTermStoreSink = buildLongTermStore(schema, longTermStoreSinkPath);
-			avroRawTimeSeriesStream.sinkTo(longTermStoreSink);
+			sinkToTimeSeriesSink(env, timeSeriesStream, longTermStoreSinkPath);
 		} else {
-			sinkToTimeSeriesSink(env, timeSeriesSource, longTermStoreSinkPath);
+			final Schema schema = buildSchema();
+			final DataStream<GenericRecord> avroRawTimeSeriesStream = timeSeriesStream.map(MapRawTimeSeriesToGenericRecord.create(schema))
+					.returns(new GenericRecordAvroTypeInfo(schema))
+					.name("map time-series with event-time to avro generic record")
+					.uid("map-time-series-with-event-time-to-avro-generic-record");
+
+			final FileSink<GenericRecord> longTermStoreSink = buildLongTermStore(schema, longTermStoreSinkPath);
+			avroRawTimeSeriesStream.sinkTo(longTermStoreSink)
+					.name("save-to-long-term-sink")
+					.uid("save to long-term sink");
 		}
 
 		env.execute("Understanding Apache Flink");
@@ -144,6 +155,13 @@ public class UnderstandingApacheFlinkApp {
 		@Override
 		public Tuple2<Integer, String> getKey(RawTimeSeries value) throws Exception {
 			return Tuple2.of(value.getStepYear(), value.getDate());
+		}
+	}
+
+	private static class NameKeySelector implements KeySelector<RawTimeSeries, String> {
+		@Override
+		public String getKey(RawTimeSeries value) throws Exception {
+			return value.getName();
 		}
 	}
 }
