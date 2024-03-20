@@ -5,6 +5,7 @@ import me.mvillalobos.presentations.flink.understanding.domain.RawTimeSeries;
 import me.mvillalobos.presentations.flink.understanding.functions.EnrichRawTimeSeriesWithEventtime;
 import me.mvillalobos.presentations.flink.understanding.functions.MapRawTimeSeriesToGenericRecord;
 import me.mvillalobos.presentations.flink.understanding.io.CSVDeserializer;
+import me.mvillalobos.presentations.flink.understanding.selectors.PartitionKeySelector;
 import org.apache.avro.Schema;
 import org.apache.avro.data.TimeConversions;
 import org.apache.avro.generic.GenericData;
@@ -12,7 +13,6 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.file.sink.FileSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
@@ -150,13 +150,6 @@ public class UnderstandingApacheFlinkApp {
 	public static TableResult createTimeSeriesTable(StreamTableEnvironment tableEnv, String path) {
 		final TableResult tableResult = tableEnv.executeSql(buildTimeSeriesDDL(path));
 		return tableResult;
-	}
-
-	private static class PartitionKeySelector implements KeySelector<RawTimeSeries, Tuple2<Integer, String>> {
-		@Override
-		public Tuple2<Integer, String> getKey(RawTimeSeries value) throws Exception {
-			return Tuple2.of(value.getStepYear(), value.getDate());
-		}
 	}
 
 	private static class NameKeySelector implements KeySelector<RawTimeSeries, String> {
