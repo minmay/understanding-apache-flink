@@ -121,7 +121,7 @@ public class Sinks {
 	private void createTimeSeriesTable(StreamTableEnvironment tableEnv, String path) {
 		tableEnv.executeSql(buildTimeSeriesDDL(path));
 	}
-	
+
 	private Schema buildSchema() throws IOException {
 		return new Schema.Parser().parse(MapRawTimeSeriesToGenericRecordOperator.class.getResourceAsStream("/RawTimeSeries.avsc"));
 	}
