@@ -1,4 +1,4 @@
-package me.mvillalobos.presentations.flink.understanding.functions;
+package me.mvillalobos.presentations.flink.understanding.operators;
 
 import me.mvillalobos.presentations.flink.understanding.domain.RawTimeSeries;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
@@ -6,7 +6,7 @@ import org.apache.flink.util.Collector;
 
 import java.time.Instant;
 
-public class EnrichRawTimeSeriesWithEventtime extends KeyedProcessFunction<String, RawTimeSeries, RawTimeSeries> {
+public class EventTimeOperator extends KeyedProcessFunction<String, RawTimeSeries, RawTimeSeries> {
 	@Override
 	public void processElement(
 			RawTimeSeries value,

@@ -7,6 +7,6 @@ import org.apache.flink.api.java.tuple.Tuple2;
 public class PartitionKeySelector implements KeySelector<RawTimeSeries, Tuple2<Integer, String>> {
 	@Override
 	public Tuple2<Integer, String> getKey(RawTimeSeries value) throws Exception {
-		return Tuple2.of(value.getStepYear(), value.getDate());
+		return Tuple2.of(value.getStepYear(), value.getStepDate());
 	}
 }
