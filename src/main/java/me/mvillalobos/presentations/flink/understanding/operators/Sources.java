@@ -21,7 +21,7 @@ public class Sources {
 		return timeSeriesSource;
 	}
 
-	public DataStreamSource<RawTimeSeries> buildTimeSeriesSource(String kafkaBootstrapServers, String kafkaTopic, String kafkaGroupId, StreamExecutionEnvironment env) {
+	private DataStreamSource<RawTimeSeries> buildTimeSeriesSource(String kafkaBootstrapServers, String kafkaTopic, String kafkaGroupId, StreamExecutionEnvironment env) {
 		KafkaSource<RawTimeSeries> kafkaSource = KafkaSource.<RawTimeSeries>builder()
 				.setBootstrapServers(kafkaBootstrapServers)
 				.setTopics(kafkaTopic)

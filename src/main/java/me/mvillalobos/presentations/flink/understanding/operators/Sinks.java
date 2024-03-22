@@ -7,7 +7,6 @@ import org.apache.avro.Schema;
 import org.apache.avro.data.TimeConversions;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.connector.file.sink.FileSink;
@@ -56,7 +55,7 @@ public class Sinks {
 		}
 	}
 
-	public void timeSeriesDataStreamSink(DataStream<GenericRecord> avroRawTimeSeriesStream, Parameters parameters, Schema schema) {
+	private void timeSeriesDataStreamSink(DataStream<GenericRecord> avroRawTimeSeriesStream, Parameters parameters, Schema schema) {
 		final String longTermStoreSinkPath = parameters.getLongTermStoreSinkPath();
 		final FileSink<GenericRecord> longTermStoreSink = buildLongTermStore(schema, longTermStoreSinkPath);
 		avroRawTimeSeriesStream.sinkTo(longTermStoreSink)
@@ -64,7 +63,7 @@ public class Sinks {
 				.uid("save to long-term sink");
 	}
 
-	public FileSink<GenericRecord> buildLongTermStore(Schema schema, String longTermStoreSinkPath) {
+	private FileSink<GenericRecord> buildLongTermStore(Schema schema, String longTermStoreSinkPath) {
 		GenericData.get().addLogicalTypeConversion(new TimeConversions.TimestampMillisConversion());
 		return FileSink
 				.forBulkFormat(
@@ -79,7 +78,7 @@ public class Sinks {
 				.uid("telegraf");
 	}
 
-	public KafkaSink<String> buildTelegrafKafkaSink(Parameters parameters) {
+	private KafkaSink<String> buildTelegrafKafkaSink(Parameters parameters) {
 		final KafkaSink<String> telegrafKafkaProducerSink = KafkaSink.<String>builder()
 				.setBootstrapServers(parameters.getKakfaBootStrapServers())
 				.setRecordSerializer(KafkaRecordSerializationSchema.builder()
@@ -92,7 +91,7 @@ public class Sinks {
 		return telegrafKafkaProducerSink;
 	}
 
-	public void timeSeriesTableSink(StreamExecutionEnvironment streamEnv, DataStream<RawTimeSeries> rawTimeSeriesStream, Parameters parameters) {
+	private void timeSeriesTableSink(StreamExecutionEnvironment streamEnv, DataStream<RawTimeSeries> rawTimeSeriesStream, Parameters parameters) {
 		final String longTermStoreSinkPath = parameters.getLongTermStoreSinkPath();
 		final StreamTableEnvironment tableEnv = StreamTableEnvironment.create(streamEnv);
 		final StreamStatementSet statementSet = tableEnv.createStatementSet();
@@ -115,16 +114,15 @@ public class Sinks {
 		statementSet.attachAsDataStream();
 	}
 
-	public String buildTimeSeriesDDL(String path) {
+	private String buildTimeSeriesDDL(String path) {
 		return String.format(TIME_SERIES_DDL_TEMPLATE, path);
 	}
 
-	public void createTimeSeriesTable(StreamTableEnvironment tableEnv, String path) {
+	private void createTimeSeriesTable(StreamTableEnvironment tableEnv, String path) {
 		tableEnv.executeSql(buildTimeSeriesDDL(path));
 	}
-
-	@VisibleForTesting
-	public Schema buildSchema() throws IOException {
+	
+	private Schema buildSchema() throws IOException {
 		return new Schema.Parser().parse(MapRawTimeSeriesToGenericRecordOperator.class.getResourceAsStream("/RawTimeSeries.avsc"));
 	}
 }
