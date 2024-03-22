@@ -1,4 +1,4 @@
-# minikube image build -t minmay/understanding-apache-flink:latest
+# minikube image build -t minmay/understanding-apache-flink:latest .
 
 ARG APP_DIR=/opt/understanding-apache-flink
 FROM gradle:7.6.4-jdk17 as build

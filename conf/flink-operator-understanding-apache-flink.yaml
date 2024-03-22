@@ -131,7 +131,9 @@ spec:
     args:
       - --kafka.bootstrap-servers
       - understanding-apache-flink-kafka-bootstrap:9092
-      - --kafka.topic
+      - --time-series.kafka.topic
       - time-series
+      - --telegraf.kafka.topic
+      - telegraf
       - --long-term-store.sink-path
       - s3://understanding-apache-flink/long-term-store

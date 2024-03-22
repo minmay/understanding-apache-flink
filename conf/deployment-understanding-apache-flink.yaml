@@ -179,3 +179,137 @@ spec:
         - name: build-storage
           persistentVolumeClaim:
             claimName: builds
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: influxdb
+  labels:
+    app: influxdb
+spec:
+  selector:
+    matchLabels:
+      app: influxdb
+  template:
+    metadata:
+      labels:
+        app: influxdb
+    spec:
+      containers:
+        - image: influxdb:2.7.5-alpine
+          name: influxdb
+          env:
+            - name: DOCKER_INFLUXDB_INIT_MODE
+              value: setup
+            - name: DOCKER_INFLUXDB_INIT_USERNAME
+              value: minmay
+            - name: DOCKER_INFLUXDB_INIT_PASSWORD
+              value: understanding apache flink
+            - name: DOCKER_INFLUXDB_INIT_ORG
+              value: minmay
+            - name: DOCKER_INFLUXDB_INIT_BUCKET
+              value: tags
+            - name: DOCKER_INFLUXDB_INIT_RETENTION
+              value: "7d"
+            - name: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+              value: Xn0EmOiR3zexX-6JPCh9kIWFeFqHkyZIkCn7Xil8wNaVmi9r6EC2Hvv7ncX7DpBkylagg5u17879IIwEArq4kQ==
+          ports:
+            - containerPort: 8086
+          volumeMounts:
+            - name: influx-storage
+              mountPath: /var/lib/influxdb2
+      volumes:
+        - name: influx-storage
+          emptyDir:
+            sizeLimit: 100M
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telegraf-configmap
+data:
+  telegraf.conf: |
+    [[outputs.influxdb_v2]]
+    ## The URLs of the InfluxDB cluster nodes.
+    ##
+    ## Multiple URLs can be specified for a single cluster, only ONE of the
+    ## urls will be written to each interval.
+    ##   ex: urls = ["https://us-west-2-1.aws.cloud2.influxdata.com"]
+    urls = ["$INFLUXDB_HOSTNAME_AND_PORT"]
+    
+    ## API token for authentication.
+    token = "$DOCKER_INFLUXDB_INIT_ADMIN_TOKEN"
+    
+    ## Organization is the name of the organization you wish to write to; must exist.
+    organization = "$DOCKER_INFLUXDB_INIT_ORG"
+    
+    ## Destination bucket to write into.
+    bucket = "$DOCKER_INFLUXDB_INIT_BUCKET"
+    
+    [[inputs.kafka_consumer]]
+    ## Kafka brokers.
+    brokers = ["$KAFKA_BROKER"]
+    
+    ## Topics to consume.
+    topics = ["$TELEGRAF_TIME_SERIES_TOPIC"]
+    
+    ## Name of the consumer group.
+    consumer_group = "$TELEGRAF_TIME_SERIES_TOPIC_CONSUMER_GROUP"
+    
+    ## Data format to consume.
+    ## Each data format has its own unique set of configuration options, read
+    ## more about them here:
+    ## https://github.com/influxdata/telegraf/blob/master/docs/DATA_FORMATS_INPUT.md
+    data_format = "influx"
+    
+    ## Optional TLS Config
+    # tls_ca = "/etc/telegraf/ca.pem"
+    # tls_cert = "/etc/telegraf/cert.pem"
+    # tls_key = "/etc/telegraf/key.pem"
+    ## Use TLS but skip chain & host verification
+    insecure_skip_verify = false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telegraf
+  labels:
+    app: telegraf
+spec:
+  selector:
+    matchLabels:
+      app: telegraf
+  template:
+    metadata:
+      labels:
+        app: telegraf
+    spec:
+      containers:
+        - image: telegraf:1.30.0-alpine
+          name: telegraf
+          env:
+            - name: INFLUXDB_HOSTNAME_AND_PORT
+              value: http://influxdb-service:8086
+            - name: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+              value: Xn0EmOiR3zexX-6JPCh9kIWFeFqHkyZIkCn7Xil8wNaVmi9r6EC2Hvv7ncX7DpBkylagg5u17879IIwEArq4kQ==
+            - name: DOCKER_INFLUXDB_INIT_ORG
+              value: minmay
+            - name: DOCKER_INFLUXDB_INIT_BUCKET
+              value: tags
+            - name: KAFKA_BROKER
+              value: understanding-apache-flink-kafka-bootstrap:9092
+            - name: TELEGRAF_TIME_SERIES_TOPIC
+              value: telegraf
+            - name: TELEGRAF_TIME_SERIES_TOPIC_CONSUMER_GROUP
+              value: telegraf
+          ports:
+            - containerPort: 8125
+            - containerPort: 8092
+            - containerPort: 8094
+          volumeMounts:
+            - name: telegraf-config
+              mountPath: /etc/telegraf/
+      volumes:
+        - name: telegraf-config
+          configMap:
+            name: telegraf-configmap

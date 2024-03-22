@@ -25,3 +25,42 @@ spec:
       port: 4566
       targetPort: 4566
       nodePort: 32566
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: influxdb-service
+spec:
+  selector:
+    app: influxdb
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 8086
+      targetPort: 8086
+      nodePort: 32086
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telegraf-service
+spec:
+  selector:
+    app: telegraf
+  type: NodePort
+  ports:
+    - name: udp1
+      protocol: UDP
+      port: 8125
+      targetPort: 8125
+      nodePort: 32125
+    - name: udp2
+      protocol: UDP
+      port: 8092
+      targetPort: 8092
+      nodePort: 32092
+    - name: telegraf
+      protocol: TCP
+      port: 8094
+      targetPort: 8094
+      nodePort: 32094
