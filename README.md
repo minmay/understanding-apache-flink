@@ -14,7 +14,7 @@ would have been the perfect solution, but it did not exist yet.
 
 Over the next 10 years, I worked at several large companies that tasked my teams with processing "big" data.
 They often tried to build their own "streaming-like" frameworks, and although the systems worked, they were by 
-comparison to Apache Flink quite clumsy. The did not horizontally, were a challenge to restart, and lacked many of the 
+comparison to Apache Flink quite clumsy. They did not horizontally, were a challenge to restart, and lacked many of the 
 features found in modern stream processing platforms.
 
 Eventually, I landed a role as a hands-on software architect tasked with designing a real-time system that provided AI advice
