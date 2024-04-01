@@ -313,3 +313,36 @@ spec:
         - name: telegraf-config
           configMap:
             name: telegraf-configmap
+---
+# https://github.com/cloudlena/s3manager
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s3manager
+  labels:
+    app: s3manager
+spec:
+  selector:
+    matchLabels:
+      app: s3manager
+  template:
+    metadata:
+      labels:
+        app: s3manager
+    spec:
+      containers:
+        - image: cloudlena/s3manager:v0.5.0
+          name: s3manager
+          env:
+            - name: ENDPOINT
+              value: localstack-service:4566
+            - name: ACCESS_KEY_ID
+              value: understanding-apache-flink
+            - name: SECRET_ACCESS_KEY
+              value: understanding-apache-flink
+            - name: REGION
+              value: us-west-1
+            - name: USE_SSL
+              value: "false"
+          ports:
+            - containerPort: 8080

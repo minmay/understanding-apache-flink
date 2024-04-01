@@ -64,3 +64,17 @@ spec:
       port: 8094
       targetPort: 8094
       nodePort: 32094
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: s3manager-service
+spec:
+  selector:
+    app: s3manager
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      nodePort: 32280

@@ -112,7 +112,7 @@ minikube image build -t minmay/flink:1.18.1-scala_2.12-hadoop-3.3.6-java11 ./con
 ```shell
 kubectl create namespace understanding-apache-flink
 kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.8.2/cert-manager.yaml     
-helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.7.0/ -n understanding-apache-flink
+helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.8.0/ -n understanding-apache-flink
 helm install --set webhook.create=false flink-kubernetes-operator flink-operator-repo/flink-kubernetes-operator -n understanding-apache-flink
 kubectl create -f 'https://strimzi.io/install/latest?namespace=understanding-apache-flink' -n understanding-apache-flink
 kubectl apply -f conf/deployment-understanding-apache-flink.yaml -n understanding-apache-flink
@@ -135,11 +135,16 @@ kubectl port-forward svc/influxdb-service 8086 -n understanding-apache-flink
 ```shell
 kubectl port-forward svc/kafka-ui-service 58080:8080 -n understanding-apache-flink  
 ```
+7. Port forwward the s3 Manager UI
+```shell
+kubectl port-forward svc/s3manager-service 32280:8080 -n understanding-apache-flink
+```
 8. Open dashboards
 ```shell
 open http://localhost:8081
 open http://localhost:8086
 open http://localhost:58080
+open http://localhost:32280
 ```
 9. teardown the deployment
 ```shell
