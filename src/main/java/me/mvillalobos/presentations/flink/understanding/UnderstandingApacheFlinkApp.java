@@ -34,8 +34,8 @@ public class UnderstandingApacheFlinkApp {
 
 		final DataStream<String> collectedLineStream = operators.collectLinesOperator(lineStream);
 
-		sinks.telegrafSink(collectedLineStream, parameters);
-		sinks.timeSeriesSink(streamEnv, rawtimeSeriesStream, parameters);
+		sinks.longTermStore(streamEnv, rawtimeSeriesStream, parameters);
+		sinks.speedLayer(collectedLineStream, parameters);
 
 		streamEnv.execute("Understanding Apache Flink");
 	}

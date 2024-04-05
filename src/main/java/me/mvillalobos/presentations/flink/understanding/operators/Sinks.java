@@ -42,7 +42,7 @@ public class Sinks {
 			"    'format' = 'parquet'\n" +
 			");";
 
-	public void timeSeriesSink(StreamExecutionEnvironment streamEnv, DataStream<RawTimeSeries> timeSeriesStream, Parameters parameters) throws IOException {
+	public void longTermStore(StreamExecutionEnvironment streamEnv, DataStream<RawTimeSeries> timeSeriesStream, Parameters parameters) throws IOException {
 		final boolean longTermStoreSinkPathSqlApiEnabled = parameters.isLongTermStoreSinkPathSqlApiEnabled();
 
 		if (longTermStoreSinkPathSqlApiEnabled) {
@@ -53,6 +53,13 @@ public class Sinks {
 			final DataStream<GenericRecord> avroRawTimeSeriesStream = operators.genericRecordOperator(timeSeriesStream, schema);
 			timeSeriesDataStreamSink(avroRawTimeSeriesStream, parameters, schema);
 		}
+	}
+
+	public void speedLayer(DataStream<String> collectedLineStream, Parameters parameters) {
+		final KafkaSink<String> telegrafKafkaProducerSink = buildTelegrafKafkaSink(parameters);
+		collectedLineStream.sinkTo(telegrafKafkaProducerSink)
+				.name("telegraf")
+				.uid("telegraf");
 	}
 
 	private void timeSeriesDataStreamSink(DataStream<GenericRecord> avroRawTimeSeriesStream, Parameters parameters, Schema schema) {
@@ -69,13 +76,6 @@ public class Sinks {
 				.forBulkFormat(
 						new Path(longTermStoreSinkPath), AvroParquetWriters.forGenericRecord(schema))
 				.build();
-	}
-
-	public void telegrafSink(DataStream<String> collectedLineStream, Parameters parameters) {
-		final KafkaSink<String> telegrafKafkaProducerSink = buildTelegrafKafkaSink(parameters);
-		collectedLineStream.sinkTo(telegrafKafkaProducerSink)
-				.name("telegraf")
-				.uid("telegraf");
 	}
 
 	private KafkaSink<String> buildTelegrafKafkaSink(Parameters parameters) {
