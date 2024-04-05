@@ -43,19 +43,26 @@ public class CSVDeserializer implements KafkaRecordDeserializationSchema<RawTime
 		try (StringReader reader = new StringReader(recordValue)) {
 			final CSVParser parser = CSVFormat.RFC4180.parse(reader);
 			for (CSVRecord csvRecord : parser.getRecords()) {
-				final Instant step = Instant.parse(csvRecord.get(0));
-				final String name = csvRecord.get(1);
-				final String value = csvRecord.get(2);
-				final RawTimeSeries rawTimeSeries = new RawTimeSeries();
-				rawTimeSeries.setContentType(contentType);
-				rawTimeSeries.setControlStreamType(controlStreamType);
-				rawTimeSeries.setStep(step);
-				rawTimeSeries.setName(name);
-				rawTimeSeries.setValue(value);
-				rawTimeSeries.setEventTime(eventTime);
-				logger.info("collect: {}", rawTimeSeries);
-				out.collect(rawTimeSeries);
+				try {
+					final Instant step = Instant.parse(csvRecord.get(0));
+					final String name = csvRecord.get(1);
+					final String value = csvRecord.get(2);
+					final RawTimeSeries rawTimeSeries = new RawTimeSeries();
+					rawTimeSeries.setContentType(contentType);
+					rawTimeSeries.setControlStreamType(controlStreamType);
+					rawTimeSeries.setStep(step);
+					rawTimeSeries.setName(name);
+					rawTimeSeries.setValue(value);
+					rawTimeSeries.setEventTime(eventTime);
+					logger.info("collect: {}", rawTimeSeries);
+					out.collect(rawTimeSeries);
+				} catch (Exception e) {
+					logger.error("Skipping bad record: {}", csvRecord, e);
+				}
 			}
+		}
+		catch (Exception e) {
+			logger.error("Skipping bad records: {}", recordValue, e);
 		}
 	}
 
