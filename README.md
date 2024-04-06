@@ -99,7 +99,7 @@ I implemented this project on macOS Sonoma. I installed the following tools.
 
 1. If it is not already started, start minikube and open its dashboard. 
 ```shell
-minikube start --memory=24576 --cpus=6
+minikube start --memory=12888 --cpus=6
 minikube dashboard
 ```
 2. Build the required images.
