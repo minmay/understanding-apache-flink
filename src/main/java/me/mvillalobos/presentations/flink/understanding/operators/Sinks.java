@@ -1,7 +1,6 @@
 package me.mvillalobos.presentations.flink.understanding.operators;
 
 import me.mvillalobos.presentations.flink.understanding.domain.RawTimeSeries;
-import me.mvillalobos.presentations.flink.understanding.selectors.PartitionKeySelector;
 import me.mvillalobos.presentations.flink.understanding.util.Parameters;
 import org.apache.avro.Schema;
 import org.apache.avro.data.TimeConversions;
@@ -99,7 +98,7 @@ public class Sinks {
 		createTimeSeriesTable(tableEnv, longTermStoreSinkPath);
 
 		final Table timeSeriesTable = tableEnv.fromDataStream(
-				rawTimeSeriesStream.keyBy(new PartitionKeySelector()),
+				rawTimeSeriesStream,
 				org.apache.flink.table.api.Schema.newBuilder()
 						.column("step", DataTypes.TIMESTAMP_LTZ())
 						.column("name", DataTypes.STRING())
