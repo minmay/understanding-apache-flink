@@ -41,9 +41,15 @@ public class Sources {
 
 		return env.fromSource(
 				kafkaSource,
-				// https://stackoverflow.com/questions/73825459/why-flink-1-15-2-showing-no-watermark-watermarks-are-only-available-if-eventtim
-				// if "operators that read from Kafka had lesser parallelism than the number of Kafka partitions" then
-				// you must configure idleness.
+				// ACCORDING TO DOCUMENTATION
+				// https://nightlies.apache.org/flink/flink-docs-release-1.19/docs/connectors/datastream/kafka/#idleness
+				// The Kafka Source does not go automatically in an idle state if the parallelism is higher than
+				// the number of partitions. You will either need to lower the parallelism or add an idle timeout to
+				// the watermark strategy. If no records flow in a partition of a stream for that amount of time,
+				// then that partition is considered “idle” and will not hold back the progress of watermarks in
+				// downstream operators.
+				// HENCE
+				// We configured idleness detection.
 				WatermarkStrategy.<RawTimeSeries>forMonotonousTimestamps()
 						.withIdleness(Duration.ofMillis(timeSeriesKafkaSourceIdlenessMs)),
 				"time-series kafka source"
