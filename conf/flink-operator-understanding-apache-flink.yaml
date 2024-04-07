@@ -136,5 +136,7 @@ spec:
       - time-series
       - --telegraf.kafka.topic
       - telegraf
+      - --telegraf.kafka.producer.acks
+      - "1"
       - --long-term-store.sink-path
       - s3://understanding-apache-flink/long-term-store

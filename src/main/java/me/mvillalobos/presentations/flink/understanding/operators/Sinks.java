@@ -15,6 +15,7 @@ import org.apache.flink.core.fs.Path;
 import org.apache.flink.formats.parquet.avro.AvroParquetWriters;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.connectors.kafka.partitioner.FlinkFixedPartitioner;
 import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamStatementSet;
@@ -80,9 +81,11 @@ public class Sinks {
 	private KafkaSink<String> buildTelegrafKafkaSink(Parameters parameters) {
 		final KafkaSink<String> telegrafKafkaProducerSink = KafkaSink.<String>builder()
 				.setBootstrapServers(parameters.getKakfaBootStrapServers())
+				.setProperty("acks", Integer.toString(parameters.getTelegrafKafkaProducerAcks()))
 				.setRecordSerializer(KafkaRecordSerializationSchema.builder()
 						.setTopic(parameters.getTelegrafKafkaTopic())
 						.setValueSerializationSchema(new SimpleStringSchema())
+						.setPartitioner(new FlinkFixedPartitioner<>())
 						.build()
 				)
 				.setDeliveryGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)

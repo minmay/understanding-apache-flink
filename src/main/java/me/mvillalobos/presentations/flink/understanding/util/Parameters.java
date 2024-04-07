@@ -10,6 +10,7 @@ public class Parameters {
 	private final String timeSeriesKafkaGroupId;
 	private final String timeSeriesKafkaTopic;
 	private final String telegrafKafkaTopic;
+	private final int telegrafKafkaProducerAcks;
 	private final long timeSeriesKafkaSourceIdlenessMs;
 	private final String longTermStoreSinkPath;
 	private final boolean longTermStoreSinkPathSqlApiEnabled;
@@ -20,6 +21,7 @@ public class Parameters {
 		this.timeSeriesKafkaTopic = parameters.get("time-series.kafka.topic", "time-series");
 		this.timeSeriesKafkaSourceIdlenessMs = parameters.getLong("time-series.kafka.source.idleness-ms", 30000L);
 		this.telegrafKafkaTopic = parameters.get("telegraf.kafka.topic", "telegraf");
+		this.telegrafKafkaProducerAcks = parameters.getInt("telegraf.kafka.producer.acks", -1);
 		this.longTermStoreSinkPath = parameters.get("long-term-store.sink-path", "s3://long-term-store");
 		this.longTermStoreSinkPathSqlApiEnabled = parameters.getBoolean("long-term-store.sink-path.sql-api.enabled", true);
 	}

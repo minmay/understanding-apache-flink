@@ -51,6 +51,8 @@ spec:
     template:
       topicOperatorContainer:
         env:
+          # Finalizers prevent teardown deletion of topics. Since this is a dev environment we will just disable them.
+          # https://strimzi.io/blog/2023/11/02/unidirectional-topic-operator/
           - name: STRIMZI_USE_FINALIZERS
             value: "false"
 ---
@@ -62,7 +64,7 @@ metadata:
     strimzi.io/cluster: understanding-apache-flink
 spec:
   partitions: 16
-  replicas: 3
+  replicas: 1
   topicName: time-series
 ---
 apiVersion: kafka.strimzi.io/v1beta2
@@ -73,7 +75,7 @@ metadata:
     strimzi.io/cluster: understanding-apache-flink
 spec:
   partitions: 16
-  replicas: 3
+  replicas: 1
   topicName: telegraf
 ---
 apiVersion: apps/v1
@@ -128,6 +130,8 @@ spec:
               value: "10000"
             - name: TAGS
               value: "/opt/data-gen-agent/conf/tags.yaml"
+            - name: KAFKA_PRODUCER_SEND_ACKS
+              value: "1"
 ---
 apiVersion: v1
 kind: ConfigMap
