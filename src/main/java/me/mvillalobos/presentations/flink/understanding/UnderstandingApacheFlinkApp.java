@@ -22,7 +22,6 @@ public class UnderstandingApacheFlinkApp {
 		final Sinks sinks = new Sinks();
 
 		final DataStream<RawTimeSeries> rawTimeSeriesSource = sources.timeSeriesSource(streamEnv, parameters);
-		final DataStream<RawTimeSeries> rawtimeSeriesStream = operators.eventTimeOperator(rawTimeSeriesSource);
 		final DataStream<TimeSeries> timeSeriesStream = operators.typeOperator(rawTimeSeriesSource);
 		final DataStream<TimeSeries> numericTimeSeriesStream = operators.numericFilterOperator(timeSeriesStream);
 		final DataStream<TimeSeries> stringTimeSeriesStream = operators.stringFilterOperator(timeSeriesStream);
@@ -34,7 +33,7 @@ public class UnderstandingApacheFlinkApp {
 
 		final DataStream<String> collectedLineStream = operators.collectLinesOperator(lineStream);
 
-		sinks.longTermStore(streamEnv, rawtimeSeriesStream, parameters);
+		sinks.longTermStore(streamEnv, rawTimeSeriesSource, parameters);
 		sinks.speedLayer(collectedLineStream, parameters);
 
 		streamEnv.execute("Understanding Apache Flink");

@@ -5,7 +5,6 @@ import me.mvillalobos.presentations.flink.understanding.domain.TimeSeries;
 import me.mvillalobos.presentations.flink.understanding.functions.CollectLines;
 import me.mvillalobos.presentations.flink.understanding.functions.ReduceLastValue;
 import me.mvillalobos.presentations.flink.understanding.functions.TimeSeriesAverage;
-import me.mvillalobos.presentations.flink.understanding.selectors.RawTimeSeriesNameKeySelector;
 import me.mvillalobos.presentations.flink.understanding.selectors.TimeSeriesNameKeySelector;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
@@ -27,14 +26,6 @@ public class Operators {
 				.name("map time-series with event-time to avro generic record operator")
 				.uid("map-time-series-with-event-time-to-avro-generic-record-operator");
 		return avroRawTimeSeriesStream;
-	}
-
-	public DataStream<RawTimeSeries> eventTimeOperator(DataStream<RawTimeSeries> timeSeriesSource) {
-		return timeSeriesSource.keyBy(
-						new RawTimeSeriesNameKeySelector()
-				).process(new EventTimeOperator())
-				.name("event time operator")
-				.uid("event-time-operator");
 	}
 
 	public DataStream<TimeSeries> typeOperator(DataStream<RawTimeSeries> timeSeriesSource) {

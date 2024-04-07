@@ -49,6 +49,28 @@ spec:
     topicOperator: {}
     userOperator: {}
 ---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: time-series
+  labels:
+    strimzi.io/cluster: understanding-apache-flink
+spec:
+  partitions: 16
+  replicas: 3
+  topicName: time-series
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: telegraf
+  labels:
+    strimzi.io/cluster: understanding-apache-flink
+spec:
+  partitions: 16
+  replicas: 3
+  topicName: telegraf
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -69,7 +91,7 @@ spec:
             - containerPort: 8080
           env:
             - name: KAFKA_CLUSTERS_0_NAME
-              value: "data-gen-agent"
+              value: "understanding-apache-flink"
             - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
               value: "understanding-apache-flink-kafka-bootstrap:9092"
             - name: SERVER_FORWARDHEADERSSTRATEGY

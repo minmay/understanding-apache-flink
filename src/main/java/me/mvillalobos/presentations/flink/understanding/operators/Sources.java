@@ -11,17 +11,26 @@ import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 
+import java.time.Duration;
+
 public class Sources {
 	public DataStream<RawTimeSeries> timeSeriesSource(StreamExecutionEnvironment streamEnv, Parameters parameters) {
 		final String kafkaBootstrapServers = parameters.getKakfaBootStrapServers();
 		final String kafkaGroupId = parameters.getTimeSeriesKafkaGroupId();
 		final String kafkaTopic = parameters.getTimeSeriesKafkaTopic();
-		final DataStream<RawTimeSeries> timeSeriesSource = buildTimeSeriesSource(kafkaBootstrapServers, kafkaTopic, kafkaGroupId, streamEnv)
+		final long timeSeriesKafkaSourceIdlenessMs = parameters.getTimeSeriesKafkaSourceIdlenessMs();
+		final DataStream<RawTimeSeries> timeSeriesSource = buildTimeSeriesSource(kafkaBootstrapServers, kafkaTopic, kafkaGroupId, timeSeriesKafkaSourceIdlenessMs, streamEnv)
 				.uid("time-series kafka-source");
 		return timeSeriesSource;
 	}
 
-	private DataStreamSource<RawTimeSeries> buildTimeSeriesSource(String kafkaBootstrapServers, String kafkaTopic, String kafkaGroupId, StreamExecutionEnvironment env) {
+	private DataStreamSource<RawTimeSeries> buildTimeSeriesSource(
+			String kafkaBootstrapServers,
+			String kafkaTopic,
+			String kafkaGroupId,
+			long timeSeriesKafkaSourceIdlenessMs,
+			StreamExecutionEnvironment env
+	) {
 		KafkaSource<RawTimeSeries> kafkaSource = KafkaSource.<RawTimeSeries>builder()
 				.setBootstrapServers(kafkaBootstrapServers)
 				.setTopics(kafkaTopic)
@@ -32,7 +41,8 @@ public class Sources {
 
 		return env.fromSource(
 				kafkaSource,
-				WatermarkStrategy.forMonotonousTimestamps(),
+				WatermarkStrategy.<RawTimeSeries>forMonotonousTimestamps()
+						.withIdleness(Duration.ofMillis(timeSeriesKafkaSourceIdlenessMs)),
 				"time-series kafka source"
 		);
 	}

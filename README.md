@@ -136,7 +136,7 @@ kubectl port-forward svc/influxdb-service 8086 -n understanding-apache-flink
 ```shell
 kubectl port-forward svc/kafka-ui-service 58080:8080 -n understanding-apache-flink  
 ```
-7. Port forwward the s3 Manager UI
+7. Port forward the s3 Manager UI
 ```shell
 kubectl port-forward svc/s3manager-service 32280:8080 -n understanding-apache-flink
 ```
