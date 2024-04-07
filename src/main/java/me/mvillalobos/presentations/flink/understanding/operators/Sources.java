@@ -41,6 +41,9 @@ public class Sources {
 
 		return env.fromSource(
 				kafkaSource,
+				// https://stackoverflow.com/questions/73825459/why-flink-1-15-2-showing-no-watermark-watermarks-are-only-available-if-eventtim
+				// if "operators that read from Kafka had lesser parallelism than the number of Kafka partitions" then
+				// you must configure idleness.
 				WatermarkStrategy.<RawTimeSeries>forMonotonousTimestamps()
 						.withIdleness(Duration.ofMillis(timeSeriesKafkaSourceIdlenessMs)),
 				"time-series kafka source"
