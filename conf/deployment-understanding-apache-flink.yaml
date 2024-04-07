@@ -48,6 +48,11 @@ spec:
   entityOperator:
     topicOperator: {}
     userOperator: {}
+    template:
+      topicOperatorContainer:
+        env:
+          - name: STRIMZI_USE_FINALIZERS
+            value: "false"
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
