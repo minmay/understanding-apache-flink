@@ -83,7 +83,7 @@ format and writes aggregate time-series data into Influx DB.
 * A fully containerized distributed application deployed locally into Kubernetes cluster with Minikube.
 * A real-world example of how to build a containerized Apache Flink job with Gradle. 
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/jl9uu0Zy_fI?si=dkDYyk2AA1noj5M7" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+[![Understanding Apache Flink](https://img.youtube.com/vi/jl9uu0Zy_fI/0.jpg)](https://www.youtube.com/embed/jl9uu0Zy_fI "Understanding Apache Flink")
 
 ## Build
 
